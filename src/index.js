@@ -9,16 +9,15 @@ import { Profile, Provider } from 'serverless-authentication';
 
 function mapProfile(response) {
   const overwrites = {
-    name: response.displayName,
-    email: response.emails ? response.emails[0].value : null,
-    picture: response.image.url,
-    provider: 'example'
+    email: null,
+    picture: null,
+    provider: 'reddit'
   };
 
   return new Profile(Object.assign(response, overwrites));
 }
 
-class ExampleProvider extends Provider {
+class RedditProvider extends Provider {
 
   /**
    * Signin function
@@ -26,10 +25,10 @@ class ExampleProvider extends Provider {
    * @param state
    * @param callback, returns url that will be used for redirecting to oauth provider signin page
    */
-  signinHandler({ scope = 'profile', state }, callback) {
+  signinHandler({ scope = 'profile', duration = 'temporary', state }, callback) {
     const options = Object.assign(
       { scope, state },
-      { signin_uri: 'https://auth.laardee.com/oauth', response_type: 'code' }
+      { signin_uri: 'https://www.reddit.com/api/v1/authorize', response_type: 'code', duration: duration }
     );
 
     super.signin(options, callback);
@@ -42,10 +41,10 @@ class ExampleProvider extends Provider {
    */
   callbackHandler(event, callback) {
     const options = {
-      authorization_uri: 'https://auth.laardee.com/oauth/token',
-      profile_uri: 'https://api.laardee.com/me',
+      authorization_uri: 'https://www.reddit.com/api/v1/access_token',
+      profile_uri: 'https://oauth.reddit.com/api/v1/me',
       profileMap: mapProfile,
-      authorizationMethod: 'POST'
+      authorizationMethod: 'GET'
     };
 
     super.callback(
@@ -58,10 +57,10 @@ class ExampleProvider extends Provider {
 }
 
 const signinHandler = (config, options, callback) =>
-  (new ExampleProvider(config)).signinHandler(options, callback);
+  (new RedditProvider(config)).signinHandler(options, callback);
 
 const callbackHandler = (event, config, callback) =>
-  (new ExampleProvider(config)).callbackHandler(event, callback);
+  (new RedditProvider(config)).callbackHandler(event, callback);
 
 exports.signinHandler = signinHandler;
 exports.signin = signinHandler; // old syntax, remove later
